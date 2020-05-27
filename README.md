@@ -1,4 +1,4 @@
-# Gemorphic change
+# Geomorphic Change
 
 This repository contains MATLAB code for computing geomorphic change from multitemporal series of digital elevation models (DEMs). Linear elevation trends (i.e. elevation change through time) are estimated based on two or more DEMs (geotiff format), for all pixels located within user-specified polygon(s) (ESRI shapefile format). Volume changes, mean elevation changes, and geodetic mass balances are then estimated along with their uncertainties as described by Maurer et al. (2019).
 
