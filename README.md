@@ -1,6 +1,6 @@
 # Geomorphic Change
 
-This repository contains MATLAB code for computing geomorphic change from multitemporal series of digital elevation models (DEMs). Linear elevation trends (i.e. elevation change through time) are estimated based on two or more DEMs (geotiff format), for all pixels located within user-specified polygon(s) (ESRI shapefile format). Volume changes, mean elevation changes, and geodetic mass balances are then estimated along with their uncertainties as described by Maurer et al. (2019).
+This repository contains MATLAB code for computing geomorphic change from multi-temporal digital elevation models (DEMs). Linear elevation trends (i.e. elevation change through time) are estimated based on two or more DEMs (geotiff format) with known acquisition times and overlapping spatial extent. Regions of interest are specified as user-defined polygon(s) (ESRI shapefile format). Volume changes, mean elevation changes, and geodetic mass balances are also estimated (for each polygon) along with their uncertainties as described by Maurer et al. (2019).
 
 ## Requirements
 
@@ -8,7 +8,7 @@ This repository contains MATLAB code for computing geomorphic change from multit
 
 * MATLAB image processing, mapping, statistics, and optimization toolboxes. Enter `ver` in the MATLAB command window to see if you have them installed.
 
-* The HEXIMAP "shared" [library](https://github.com/gmorky/heximap/tree/master/main/shared)
+* The HEXIMAP "shared" [library](https://github.com/gmorky/heximap/tree/master/main/shared).
 
 ## Tips
 
@@ -18,11 +18,11 @@ This repository contains MATLAB code for computing geomorphic change from multit
 
 * If input geotiffs have varying spatial resolutions, the code will resample them all to match the input dataset with the lowest spatial resolution.
 
-* The quality of the output elevation change maps should be inspected carefully before assuming that the geomorphic change values and their uncertainties are accurate.
+* The quality of the output elevation change maps should be inspected carefully before assuming that the geomorphic change computations are meaningful or accurate.
 
 ## Installation
 
-After downloading the repository, add it to your MATLAB path including all subdirectories as `addpath(genpath('/path/to/geomorphicChange'))`. Also add the required HEXIMAP shared library as `addpath('/path/to/heximap/main/shared')`.
+After downloading the repository, add it to your MATLAB path including all subdirectories as `addpath(genpath('/path/to/geomorphic-change'))`. Also add the required HEXIMAP shared library as `addpath('/path/to/heximap/main/shared')`.
 
 ## Usage
 
@@ -32,31 +32,31 @@ After downloading the repository, add it to your MATLAB path including all subdi
 
 	* `modernShapefilePath` (char): Path to the shapefile containing "modern" polygons (i.e. at end of timespan of interest). Corresponding historical and modern polygons will be matched up based on their ID field values (see `params.polygonIdField` below).
 
-	* `demParams` (struct): Required information about each DEM used as input.
+	* `demParams` (1xN struct): Required information about each DEM used as input. This is a 1xN struct array, where N is the number of input DEMs (see demo script):
 
 		* `demParams.file` (char): Path to a DEM geotiff file.
 
-		* `demParams.boundingBox` (4x2 double): Matrix specifying the spatial bounding box of a DEM geotiff file. See demo script for example.
+		* `demParams.boundingBox` (4x2 double): Matrix specifying the spatial bounding box of a DEM geotiff file. See demo script for an example.
 
 		* `demParams.acquisitionDate` (1x1 datetime): A DEM acquisition date (i.e. time of observation) in matlab datetime format. This is necessary so that the code can sort all the input DEMs into the correct temporal order.
 
-	* `params` (struct): Input parameters for the geomorphic change function.
+	* `params` (struct): Input parameters for the geomorphic change function:
 
 		* `params.maskDir` (char): Path to the directory containing shapefile(s) with polygons enclosing terrain known to be unstable through time. In the example dataset, polygons representing glacier extents are used.
 
-		* `params.maxVertices` (1x1 double): Shapefile polygons with vertex counts greater than this threshold will be skipped when computing elevation trends and geomorphic change.
+		* `params.maxVertices` (1x1 double): Elevation trends and geomorphic changes will not be computed for polygons with vertex counts greater than this threshold.
 
 		* `params.polygonIdField` (char): ID field used to match up historical and modern shapefile polygons.
 
-		* `params.polygonOverlapCheck` (1x1 logical): If set to true, the code will check whether DEMs overlap with the actual polygon boundary (defined by the polygon vertices) rather than simply checking overlap with the polygon bounding box.
+		* `params.polygonOverlapCheck` (1x1 logical): If set to true, the code will check whether input DEMs overlap with the actual polygon boundaries (defined by the polygon vertices) rather than simply checking overlap with the polygon bounding box.
 
 		* `params.boundingBoxPctBuffer` (1x1 double): Percent extension of polygon bounding box edges. This determines how much "stable terrain" (i.e. terrain surrounding the polygon) is included in the computations (stable terrain is used for a final vertical alignment of the DEMs and for estimating uncertainties). Units: percentage of original box width and height.
 
-		* `params.alignThresh` (1x1 double): Before computing geomorphic change, DEMs are vertically shifted to remove any biases (using stable terrain only in this step). When determining the shift, any elevation differences larger than this threshold are ignored. This helps prevent outlier elevation pixels from influencing the results.
+		* `params.alignThresh` (1x1 double): Before computing geomorphic change, DEMs are vertically shifted to remove any biases (using stable terrain only in this step). When determining the shift, any elevation differences larger than this threshold are ignored. This helps prevent erroneous outlier elevation pixels from biasing the results.
 
-		* `params.nullVal` (1x1 double or char): Value in the input DEMs used to represent missing or null data. To assume all elevation pixel values less than -500 or greater than 9000 are null, set this parameter to `'dem'`.
+		* `params.nullVal` (1x1 double or char): Value used in the input DEMs to represent missing or null data. To assume all elevation pixel values less than -500 or greater than 9000 are null, set this parameter to `'dem'`.
 
-		* `params.ransac` (struct): Parameters for the random sample consensus (RANSAC) trend fitting procedure.
+		* `params.ransac` (struct): Parameters for the random sample consensus (RANSAC) trend fitting procedure:
 
 			* `params.ransac.iterations` (1x1 double): Number of RANSAC iterations to perform.
 
@@ -72,19 +72,19 @@ After downloading the repository, add it to your MATLAB path including all subdi
 
 		* `params.trendMinTimespan` (1x1 double): Any elevation trends with less than this duration of data coverage are removed. Units: years.
 
-		* `params.trendMaxStd` (1x1 double): Any elevation trends with local neighborhood standard deviations (i.e. local std of the elevation change map) greater than this value are removed. 
+		* `params.trendMaxStd` (1x1 double): Any elevation trends with local neighborhood standard deviations (i.e. local standard deviations of the elevation change map) greater than this value are removed. 
 
 		* `params.trendMaxGrad` (1x1 double): Any elevation trends with local neighborhood gradients (i.e. local gradient of the elevation change map) greater than this value are removed.
 
-		* `params.refDem` (struct): Parameters for the reference DEM.
+		* `params.refDem` (struct): Parameters for the reference DEM:
 
 			* `params.refDem.path` (char): Path to a reference DEM geotiff file.
 
 			* `params.refDem.nullVal` (1x1 double or char): Value in the reference DEM used to represent missing or null data. To assume all elevation pixel values less than -500 or greater than 9000 are null, set this parameter to `'dem'`.
 
-		* `params.interpParams` (struct): Parameters for interpolating data gaps in the elevation change maps.
+		* `params.interpParams` (struct): Parameters for interpolating data gaps in the elevation change maps:
 
-			* `method` (char): Method used to interpolate data gaps inside the polygon. Can be specified as `'simpleFill'`, `'spatialInterp'`, or `'elevationBins'`. For the `'simpleFill'` option, a constant value is used to fill data gaps. For the `'spatialInterp'` option, 2D linear spatial interpolation is used to fill the data gaps. If desired, all pixels outside the polygon can be set to a specified (constant) value before interpolating data gaps within the polygon. This can help prevent large extrapolation errors in regions with large data gaps. For the `'elevationBins'` option, elevation change pixels are grouped into elevation bins, and data gaps are interpolated using the means of each bin. This method is ideal for situations where a correlation between elevation and elevation change is expected (mountain glaciers, for example).
+			* `method` (char): Method used to interpolate data gaps inside the polygon. Can be specified as `'simpleFill'`, `'spatialInterp'`, or `'elevationBins'`. For the `'simpleFill'` option, a user-specified constant value is used to fill data gaps. For the `'spatialInterp'` option, 2D linear spatial interpolation is used to fill the data gaps. If desired, all pixels outside the polygon can be set to a specified (constant) value before interpolating data gaps within the polygon. This can help prevent large extrapolation errors in regions with large data gaps. For the `'elevationBins'` option, elevation change pixels are grouped into elevation bins, and data gaps are interpolated using the means of each bin. This method is ideal for situations where a correlation between elevation and elevation change is expected (mountain glaciers, for example).
 
 			* Parameters for the `'simpleFill'` option:
 
@@ -92,7 +92,7 @@ After downloading the repository, add it to your MATLAB path including all subdi
 
 			* Parameters for the `'spatialInterp'` option:
 				
-				* `polygonEdges` (1x1 double or char): All pixels outside the polygon will be set to this value before interpolating data gaps within the polygon. To leave these outside pixels undisturbed, set this parameter to `'keep'`;
+				* `polygonEdges` (1x1 double or char): All pixels outside the polygon will be set to this value before interpolating data gaps within the polygon. To leave outside pixels undisturbed, set this parameter to `'keep'`;
 
 			* Parameters for the `'elevationBins'` option:
 
@@ -100,7 +100,7 @@ After downloading the repository, add it to your MATLAB path including all subdi
 
 				* `binOutlierQuantiles` (1x2 double): Quantiles for which elevation change pixels are considered outliers within a bin. Any elevation change pixels falling outside the specified quantiles are removed from the bin. Must be a 1x2 vector with values between 0 and 1.
 
-				* `binMinValidCount` (1x1 double): Bins with less than this number of pixel counts are removed. The bin means are subsequently interpolated using adjacent bins.
+				* `binMinValidCount` (1x1 double): Bins with less than this number of pixels are removed. The bin means are subsequently interpolated using adjacent bins.
 
 				* `endBinsFillVal` (1x2 double): If the first bin (lowest elevation) or last bin (highest elevation) have pixel counts less than `binMinValidCount`, their bin means are set to the first value (first bin) or the second value (last bin) in this 1x2 vector during interpolation. Units: meters year<sup>-1</sup>.
 
@@ -114,9 +114,9 @@ After downloading the repository, add it to your MATLAB path including all subdi
 
 		* `params.extrapolationSigma` (1x1 double): 1-sigma uncertainty associated with interpolation or extrapolation of missing data, used in error propagation calculations.
 
-		* `params.materialDensitySigma` (1x1 double): 1-sigma uncertainty associated with material density, used in error propagation calculations.
+		* `params.materialDensitySigma` (1x1 double): 1-sigma uncertainty of material density, used in error propagation calculations.
 
-		* `params.areaPercentError` (1x1 double): 1-sigma uncertainty associated with polygon area estimates, used in error propagation calculations.
+		* `params.areaPercentError` (1x1 double): 1-sigma uncertainty of polygon area estimates (in percent), used in error propagation calculations.
 
 
 * `shapefileLoop(historicalShapefilePath,saveDir,polygonIdField,numBlocksX,numBlocksY,functionHandles,parallel);`
@@ -135,11 +135,11 @@ After downloading the repository, add it to your MATLAB path including all subdi
 
 	* `parallel` (1x1 logical): Flag specifying whether to execute for-loop iterations in parallel (requires the parallel computing toolbox).
 
-The *geomorphicChange.m* function outputs computations in individual *.mat* files corresponding to each polygon processed. The output (struct) fields are as follows:
+The *geomorphicChange.m* function outputs results in individual *.mat* files corresponding to each polygon processed. The output (struct) fields are as follows:
 
 * `bins` (struct): If `'elevationBins'` is specified in `params.interpParams` (see above), this contains statistics for the elevation bins such as mean, median, and std.
 
-* `change` (struct): Contains the geomorphic change values.
+* `change` (struct): Contains the geomorphic change values:
 
 	* `historicalArea` (1x1 double): The area of the historical polygon. Units: m<sup>2</sup>.
 
@@ -147,7 +147,7 @@ The *geomorphicChange.m* function outputs computations in individual *.mat* file
 
 	* `percentDataCoverage` (1x1 double): The percentage of the polygon area where elevation changes were computed.
 
-	* `volumeChange` (1x1 double): Volume change within the polygon. Units: meters<sup>3</sup> year<sup>-1</sup>.
+	* `volumeChange` (1x1 double): Total estimated volume change within the polygon. Units: meters<sup>3</sup> year<sup>-1</sup>.
 
 	* `meanElevationChange` (1x1 double): Mean elevation change within the polygon area. Units: meters year<sup>-1</sup>.
 
@@ -155,7 +155,7 @@ The *geomorphicChange.m* function outputs computations in individual *.mat* file
 
 * `demParams` (struct): Contains a copy of the DEM parameters (see above) for each DEM used to calculate geomorphic change for the polygon.
 
-* `grid` (struct): Gridded data (M x N matrices) for the polygon, including longitude, latitude, elevation, slope, historical and modern polygon masks, elevation change map, data gaps mask, unstable terrain mask, and a spatial referencing structure (useful for exporting grids as geotiffs).
+* `grid` (struct): Gridded data (MxN matrices) for the polygon, including longitude, latitude, elevation, slope, historical and modern polygon masks, elevation change map, data gaps mask, unstable terrain mask, and a spatial referencing structure (useful for exporting grids as geotiffs).
 
 * `historicalShapefile` (struct): The historical shapefile polygon data. Also see `historicalShapefilePath` above.
 
