@@ -16,7 +16,7 @@ if isnan(sBins.mean(end))
 end
 
 % Interpolate bins
-sBins.mean = inpaint_nans(sBins.mean);
+sBins.mean = fillmissing(sBins.mean,'linear');
 
 % Bin index
 mIdx = reshape(knnsearch(sBins.bin(:),mGrid(:)),size(mGrid));
